@@ -1,0 +1,38 @@
+[Unit]
+Description=LMServer - OpenAI-compatible API Gateway
+After=network.target llama-server.service
+Wants=network-online.target
+Requires=llama-server.service
+
+[Service]
+Type=simple
+User=jerkytreats
+Group=jerkytreats
+
+# Working directory
+WorkingDirectory=/home/jerkytreats/ai/lmserver
+
+# Environment
+Environment="LMSERVER_HOST=0.0.0.0"
+Environment="LMSERVER_PORT=8000"
+Environment="LMSERVER_LLAMA_SERVER_URL=http://127.0.0.1:8080"
+Environment="LMSERVER_MAX_CONCURRENT_REQUESTS=4"
+Environment="LMSERVER_DNS_REGISTER_ON_STARTUP=false"
+Environment="LMSERVER_DNS_SERVICE_NAME=chat"
+Environment="LMSERVER_DEFAULT_MODEL=gpt-oss-20b"
+
+# Python virtual environment (adjust path if different)
+ExecStart=/home/jerkytreats/ai/lmserver/.venv/bin/uvicorn lmserver.main:app --host 0.0.0.0 --port 8000
+
+# Restart policy
+Restart=on-failure
+RestartSec=5
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=lmserver
+
+[Install]
+WantedBy=multi-user.target
+
