@@ -13,6 +13,7 @@ Group=jerkytreats
 WorkingDirectory=/home/jerkytreats/ai/lmserver
 
 # Environment
+Environment="PYTHONPATH=/home/jerkytreats/ai/lmserver"
 Environment="LMSERVER_HOST=0.0.0.0"
 Environment="LMSERVER_PORT=8000"
 Environment="LMSERVER_LLAMA_SERVER_URL=http://127.0.0.1:8080"
