@@ -6,12 +6,12 @@ OpenAI-compatible local LLM API gateway for Tailscale networks.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  leviathan (AMD AI 395 MAX / 128GB)                        │
+│  Host Machine (configured via DNS_TARGET_DEVICE)           │
 │                                                             │
 │  ┌─────────────────────────────────────────────────────┐   │
 │  │ llama-server (localhost:8080)                       │   │
-│  │ - Vulkan acceleration on Radeon 8060S               │   │
-│  │ - Serves GPT-OSS-20B model                          │   │
+│  │ - Local LLM inference server                        │   │
+│  │ - Serves configured model                           │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                          ▲                                  │
 │                          │                                  │
@@ -26,8 +26,8 @@ OpenAI-compatible local LLM API gateway for Tailscale networks.
 └──────────────────────────│──────────────────────────────────┘
                            │
         ┌──────────────────┴──────────────────┐
-        │  chat.internal.jerkytreats.dev      │
-        │  (Tailscale DNS)                    │
+        │  {DNS_SERVICE_NAME}.{DNS_DOMAIN_BASE} │
+        │  (Tailscale DNS - configurable)      │
         └─────────────────────────────────────┘
 ```
 
@@ -36,7 +36,10 @@ OpenAI-compatible local LLM API gateway for Tailscale networks.
 ### 1. Set up Python environment
 
 ```bash
-cd /home/jerkytreats/ai/lmserver
+# Clone or navigate to the project directory
+cd /path/to/lmserver
+
+# Create virtual environment
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -86,6 +89,16 @@ curl http://localhost:8000/v1/queue/status
 
 ## Systemd Services (Production)
 
+**Important:** The systemd service files contain user-specific paths (e.g., `/home/jerkytreats/...`) that must be customized for your deployment environment before installation.
+
+### Customize service files
+
+Before installing, edit the service files to match your environment:
+
+- `systemd/lmserver.service`: Update `User`, `Group`, `WorkingDirectory`, and `ExecStart` paths
+- `systemd/llama-server.service`: Update `User`, `Group`, `WorkingDirectory`, and script paths
+- `scripts/run-llama-server.sh`: Update `LLAMA_SERVER` and `MODEL_PATH` variables
+
 ### Install services
 
 ```bash
@@ -126,15 +139,35 @@ All settings can be configured via environment variables with `LMSERVER_` prefix
 | `LMSERVER_LLAMA_SERVER_URL` | `http://127.0.0.1:8080` | llama-server backend URL |
 | `LMSERVER_MAX_CONCURRENT_REQUESTS` | `4` | Max parallel inferences |
 | `LMSERVER_REQUEST_TIMEOUT` | `300.0` | Request timeout (seconds) |
-| `LMSERVER_DNS_API_URL` | `https://dns.internal.jerkytreats.dev` | DNS API server |
-| `LMSERVER_DNS_SERVICE_NAME` | `chat` | Service name for DNS |
+| `LMSERVER_DNS_DOMAIN_BASE` | `internal.jerkytreats.dev` | Base domain for DNS registration (customize for your network) |
+| `LMSERVER_DNS_API_URL` | `https://dns.internal.jerkytreats.dev` | DNS API server URL (customize for your network) |
+| `LMSERVER_DNS_SERVICE_NAME` | `chat` | Service name for DNS (combined with DNS_DOMAIN_BASE) |
 | `LMSERVER_DNS_REGISTER_ON_STARTUP` | `false` | Register with DNS on start (only needed once) |
+| `LMSERVER_DNS_TARGET_DEVICE` | `leviathan` | Tailscale device name where service runs (customize for your device) |
 | `LMSERVER_DEFAULT_MODEL` | `gpt-oss-20b` | Default model name |
 
 You can also create a `.env` file:
 
 ```bash
+# Server settings
+LMSERVER_HOST=0.0.0.0
+LMSERVER_PORT=8000
+
+# Backend
+LMSERVER_LLAMA_SERVER_URL=http://127.0.0.1:8080
+
+# Concurrency
 LMSERVER_MAX_CONCURRENT_REQUESTS=8
+LMSERVER_REQUEST_TIMEOUT=300.0
+
+# DNS registration (network topology - customize for your environment)
+LMSERVER_DNS_DOMAIN_BASE=internal.example.com
+LMSERVER_DNS_API_URL=https://dns.internal.example.com
+LMSERVER_DNS_SERVICE_NAME=chat
+LMSERVER_DNS_REGISTER_ON_STARTUP=false
+LMSERVER_DNS_TARGET_DEVICE=your-device-name
+
+# Model
 LMSERVER_DEFAULT_MODEL=gpt-oss-20b
 ```
 
@@ -175,7 +208,8 @@ The merkle project batch workloads will queue behind the semaphore automatically
 from openai import OpenAI
 
 client = OpenAI(
-    base_url="http://chat.internal.jerkytreats.dev/v1",
+    base_url="http://{LMSERVER_DNS_SERVICE_NAME}.{LMSERVER_DNS_DOMAIN_BASE}/v1",
+    # Example: http://chat.internal.example.com/v1
     api_key="not-needed",  # No auth required
 )
 
@@ -188,14 +222,18 @@ print(response.choices[0].message.content)
 
 ## Switching Models
 
-To use a different model, edit `scripts/run-llama-server.sh`:
+To use a different model, edit `scripts/run-llama-server.sh` and update the `MODEL_PATH` variable:
 
 ```bash
-# GPT-OSS-120B (needs more RAM)
-MODEL_PATH="/home/jerkytreats/.lmstudio/models/lmstudio-community/gpt-oss-120b-GGUF/gpt-oss-120b-MXFP4-00001-of-00002.gguf"
+# Set the path to your model file
+MODEL_PATH="/path/to/your/model.gguf"
+```
 
-# DeepSeek-V3 Q3 (very large)
-MODEL_PATH="/home/jerkytreats/models/deepseek-v3-q3/DeepSeek-V3-Q3_K_M/DeepSeek-V3-Q3_K_M-00001-of-00008.gguf"
+You can also set it via environment variable:
+
+```bash
+export MODEL_PATH="/path/to/your/model.gguf"
+./scripts/run-llama-server.sh
 ```
 
 Then restart the service:
@@ -203,4 +241,6 @@ Then restart the service:
 ```bash
 sudo systemctl restart llama-server
 ```
+
+**Note:** The systemd service files and scripts contain user-specific paths that should be customized for your deployment environment.
 

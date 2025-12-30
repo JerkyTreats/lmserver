@@ -28,17 +28,25 @@ class Settings(BaseSettings):
     )
 
     # DNS registration
+    dns_domain_base: str = Field(
+        default="internal.jerkytreats.dev",
+        description="Base domain for DNS registration (e.g., internal.jerkytreats.dev)",
+    )
     dns_api_url: str = Field(
         default="https://dns.internal.jerkytreats.dev",
         description="Custom DNS API server URL",
     )
     dns_service_name: str = Field(
         default="chat",
-        description="Service name for DNS registration (becomes chat.internal.jerkytreats.dev)",
+        description="Service name for DNS registration (combined with dns_domain_base to form full domain)",
     )
     dns_register_on_startup: bool = Field(
         default=False,
         description="Whether to register with DNS on startup (only needed once)",
+    )
+    dns_target_device: str = Field(
+        default="leviathan",
+        description="Tailscale device name where the service runs",
     )
 
     # Model settings (for display/routing)

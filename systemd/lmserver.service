@@ -6,13 +6,16 @@ Requires=llama-server.service
 
 [Service]
 Type=simple
+# TODO: Customize user/group for your deployment
 User=jerkytreats
 Group=jerkytreats
 
 # Working directory
+# TODO: Update path to match your deployment
 WorkingDirectory=/home/jerkytreats/ai/lmserver
 
 # Environment
+# TODO: Update path to match your deployment
 Environment="PYTHONPATH=/home/jerkytreats/ai/lmserver"
 Environment="LMSERVER_HOST=0.0.0.0"
 Environment="LMSERVER_PORT=8000"
@@ -22,7 +25,8 @@ Environment="LMSERVER_DNS_REGISTER_ON_STARTUP=false"
 Environment="LMSERVER_DNS_SERVICE_NAME=chat"
 Environment="LMSERVER_DEFAULT_MODEL=gpt-oss-20b"
 
-# Python virtual environment (adjust path if different)
+# Python virtual environment
+# TODO: Update path to match your deployment
 ExecStart=/home/jerkytreats/ai/lmserver/.venv/bin/uvicorn lmserver.main:app --host 0.0.0.0 --port 8000
 
 # Restart policy

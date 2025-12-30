@@ -12,11 +12,12 @@ async def register_dns() -> bool:
     """
     Register this service with the custom DNS API server.
 
-    POST to dns.internal.jerkytreats.dev/add-record/ with:
+    POST to {dns_api_url}/add-record/ with:
     {
-        "name": "chat",
-        "port": 8000,
-        "service_name": "lmserver"
+        "name": {dns_service_name},
+        "port": {port},
+        "service_name": "lmserver",
+        "target_device": {dns_target_device}
     }
 
     Returns True if registration succeeded, False otherwise.
@@ -29,6 +30,7 @@ async def register_dns() -> bool:
         "name": settings.dns_service_name,
         "port": settings.port,
         "service_name": "lmserver",
+        "target_device": settings.dns_target_device,
     }
 
     try:
@@ -38,8 +40,9 @@ async def register_dns() -> bool:
                 json=payload,
             )
             response.raise_for_status()
+            full_domain = f"{settings.dns_service_name}.{settings.dns_domain_base}"
             logger.info(
-                f"Registered with DNS: {settings.dns_service_name}.internal.jerkytreats.dev -> :{settings.port}"
+                f"Registered with DNS: {full_domain} -> :{settings.port}"
             )
             return True
     except httpx.HTTPStatusError as e:

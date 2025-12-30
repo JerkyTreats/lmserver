@@ -5,10 +5,12 @@ Wants=network-online.target
 
 [Service]
 Type=simple
+# TODO: Customize user/group for your deployment
 User=jerkytreats
 Group=jerkytreats
 
 # Paths
+# TODO: Update path to match your deployment
 WorkingDirectory=/home/jerkytreats/ai/llama.cpp
 
 # Environment
@@ -19,6 +21,7 @@ Environment="LLAMA_GPU_LAYERS=99"
 Environment="LLAMA_THREADS=8"
 
 # Run the server
+# TODO: Update path to match your deployment
 ExecStart=/home/jerkytreats/ai/lmserver/scripts/run-llama-server.sh
 
 # Restart policy
